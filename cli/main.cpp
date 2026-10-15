@@ -4,6 +4,7 @@
 //   ./build/equity "AsKs" "QhQd" --board "Jc Tc 2d" --exact
 //   ./build/equity "AhAd" "QQ+, AKs" random --samples 2000000
 //   ./build/equity --eval "As Ks Qs Js Ts 2d 3c"
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdio>

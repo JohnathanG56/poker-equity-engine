@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <utility>
 #include <vector>
 
