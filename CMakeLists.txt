@@ -43,6 +43,15 @@ find_package(Threads REQUIRED)
 target_link_libraries(poker PUBLIC Threads::Threads)
 
 # ---------------------------------------------------------------------------
+# Command-line tool: ./build/equity
+# ---------------------------------------------------------------------------
+if(POKER_BUILD_CLI)
+  add_executable(equity cli/main.cpp)
+  target_link_libraries(equity PRIVATE poker)
+  target_compile_options(equity PRIVATE -Wall -Wextra)
+endif()
+
+# ---------------------------------------------------------------------------
 # Tests (Catch2 v3 via FetchContent)
 # ---------------------------------------------------------------------------
 if(POKER_BUILD_TESTS)
