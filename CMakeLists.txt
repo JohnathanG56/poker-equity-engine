@@ -23,6 +23,7 @@ option(POKER_NATIVE_ARCH "Compile with -march=native (not portable)" OFF)
 add_library(poker
   src/card.cpp
   src/evaluator.cpp
+  src/equity_exact.cpp
 )
 target_include_directories(poker PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_options(poker PRIVATE -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wno-sign-conversion)
@@ -56,6 +57,7 @@ if(POKER_BUILD_TESTS)
     tests/test_card.cpp
     tests/test_evaluator.cpp
     tests/test_reference.cpp
+    tests/test_exact.cpp
   )
   target_link_libraries(poker_tests PRIVATE poker Catch2::Catch2WithMain)
   target_compile_options(poker_tests PRIVATE -Wall -Wextra)
