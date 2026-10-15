@@ -43,7 +43,7 @@ $ ./build/equity AhAd "QQ+, AKs, ATo+, 76s, KQ" random --samples 1000000 --threa
 - **7-card evaluator** (`evaluate7`): one `uint64_t` card mask in, one `uint32_t` strength out;
   higher wins, equal ties. Per-suit rank masks via a portable "pext" bit gather, flush by popcount,
   straights by shift-and-AND (including the A-2-3-4-5 wheel), pairs/trips/quads with a bit-sliced
-  adder. Two 8192-entry tables (16 KB each) are generated **at compile time** (`constexpr`), so
+  adder. Two 8192-entry tables (16 KB + 8 KB) are generated **at compile time** (`constexpr`), so
   there is no startup cost and the whole engine is ~108 KB of WebAssembly.
 - **Verified exhaustively**: agrees with a deliberately naive 21-subset reference evaluator on
   1,000,000 seeded random hands (identical ordering *and* ties), on all 2,598,960 five-card hands

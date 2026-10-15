@@ -25,7 +25,7 @@
 //   Two pair, K K 8 8 with 2 kicker:  bigger major (bit 8 > bit 7) -> wins
 //
 // The evaluator is branch-light, allocation-free and uses two 8192-entry
-// (16 KB each) lookup tables built at compile time, so it also fits comfortably
+// lookup tables (16 KB + 8 KB) built at compile time, so it also fits comfortably
 // in a WebAssembly build.
 #pragma once
 
