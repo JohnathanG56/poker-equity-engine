@@ -1,6 +1,6 @@
 // Cross-checks the fast evaluator against the brute-force reference evaluator
 // and against exhaustive enumeration of every 5- and 7-card hand.
-#include <catch2/catch_test_macros.hpp>
+#include "catch_amalgamated.hpp"
 
 #include <algorithm>
 #include <array>

@@ -92,14 +92,25 @@ endif()
 # Tests (Catch2 v3 via FetchContent)
 # ---------------------------------------------------------------------------
 if(POKER_BUILD_TESTS)
+  # Catch2 v3, fetched at configure time. We compile its single-file
+  # "amalgamated" distribution (extras/catch_amalgamated.cpp) instead of the
+  # full ~100-file library: one translation unit, so clean builds are fast and
+  # `cmake --build build -j` cannot spawn dozens of memory-hungry compiler jobs.
+  # SOURCE_SUBDIR points at a directory without a CMakeLists.txt so that
+  # FetchContent only downloads the sources.
   include(FetchContent)
   FetchContent_Declare(
     Catch2
     GIT_REPOSITORY https://github.com/catchorg/Catch2.git
     GIT_TAG        v3.7.1
     GIT_SHALLOW    TRUE
+    SOURCE_SUBDIR  extras
   )
   FetchContent_MakeAvailable(Catch2)
+
+  add_library(catch2_amalgamated STATIC ${catch2_SOURCE_DIR}/extras/catch_amalgamated.cpp)
+  target_include_directories(catch2_amalgamated SYSTEM PUBLIC ${catch2_SOURCE_DIR}/extras)
+  target_compile_features(catch2_amalgamated PUBLIC cxx_std_20)
 
   enable_testing()
   add_executable(poker_tests
@@ -110,7 +121,7 @@ if(POKER_BUILD_TESTS)
     tests/test_range.cpp
     tests/test_mc.cpp
   )
-  target_link_libraries(poker_tests PRIVATE poker Catch2::Catch2WithMain)
+  target_link_libraries(poker_tests PRIVATE poker catch2_amalgamated)
   target_compile_options(poker_tests PRIVATE -Wall -Wextra)
 
   list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
