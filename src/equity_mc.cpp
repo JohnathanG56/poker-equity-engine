@@ -16,8 +16,10 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <exception>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "equity_common.hpp"
@@ -44,8 +46,11 @@ struct Problem {
   std::vector<std::uint64_t> deck;                  // cards not in `fixed`
 };
 
-/// Integer results of one stream of samples.
-struct StreamResult {
+/// Integer results of one stream of samples. alignas(64) puts each thread's
+/// slot on its own cache line. (Each worker also accumulates into a local
+/// copy and writes the slot exactly once at the end, so even without the
+/// alignment there would be no false sharing inside the hot loop.)
+struct alignas(64) StreamResult {
   std::array<Tally, kMaxPlayers> tally{};
   std::uint64_t samples = 0;
   std::uint64_t rejected = 0;
@@ -161,7 +166,7 @@ EquityResult equity_monte_carlo(const std::vector<PlayerSpec>& players, CardSet 
   if (samples == 0) throw std::invalid_argument("samples must be positive");
   const Problem pb = build_problem(players, board, dead);
 
-  if (threads == 0) threads = 1;
+  if (threads == 0) threads = std::max(1u, std::thread::hardware_concurrency());
   if (threads > samples) threads = static_cast<unsigned>(samples);
 
   // Split samples as evenly as possible: the first (samples % threads)
@@ -170,7 +175,8 @@ EquityResult equity_monte_carlo(const std::vector<PlayerSpec>& players, CardSet 
   for (unsigned t = 0; t < samples % threads; ++t) ++share[t];
 
   // Stream t uses the base generator jumped t times (2^128 steps each), so
-  // streams never overlap and the result depends only on (seed, threads).
+  // streams never overlap and the result depends only on (seed, threads),
+  // never on how the OS schedules the threads.
   std::vector<Xoshiro256ss> rngs;
   Xoshiro256ss base(seed);
   for (unsigned t = 0; t < threads; ++t) {
@@ -178,8 +184,30 @@ EquityResult equity_monte_carlo(const std::vector<PlayerSpec>& players, CardSet 
     base.jump();
   }
 
+  // One worker per stream. Workers share only read-only data (`pb`); each
+  // writes its own result slot and its own exception slot, once. No locks or
+  // atomics are needed anywhere: join() is the synchronization point.
   std::vector<StreamResult> parts(threads);
-  for (unsigned t = 0; t < threads; ++t) parts[t] = run_stream(pb, share[t], rngs[t]);
+  std::vector<std::exception_ptr> errors(threads);
+  auto work = [&](unsigned t) {
+    try {
+      parts[t] = run_stream(pb, share[t], rngs[t]);
+    } catch (...) {
+      errors[t] = std::current_exception();
+    }
+  };
+  if (threads == 1) {
+    work(0);  // no thread start-up cost for the common single-threaded case
+  } else {
+    std::vector<std::thread> pool;
+    pool.reserve(threads - 1);
+    for (unsigned t = 1; t < threads; ++t) pool.emplace_back(work, t);
+    work(0);  // the calling thread does stream 0 itself
+    for (auto& th : pool) th.join();
+  }
+  for (const auto& e : errors) {
+    if (e) std::rethrow_exception(e);
+  }
 
   // Deterministic merge: integer sums, so order cannot change the answer.
   std::array<Tally, kMaxPlayers> total{};

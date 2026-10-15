@@ -205,3 +205,39 @@ TEST_CASE("mc: invalid or impossible input throws", "[mc]") {
   // Three players cannot all hold AA
   CHECK_THROWS_AS(equity_monte_carlo(specs({"AA", "AA", "AA"}), {}, {}, 10, 1, 1), std::invalid_argument);
 }
+
+TEST_CASE("mc threads: reproducible with 4 threads", "[mc][threads]") {
+  const auto ps = specs({"AhKh", "22-55, ATs+", "random", "random"});
+  const auto first = equity_monte_carlo(ps, {}, {}, 100'003, 2024, 4);  // uneven split
+  REQUIRE(first.trials == 100'003);
+  for (int run = 0; run < 3; ++run) {
+    const auto again = equity_monte_carlo(ps, {}, {}, 100'003, 2024, 4);
+    CHECK(again.rejected == first.rejected);
+    for (std::size_t i = 0; i < ps.size(); ++i) {
+      CHECK(again.players[i].equity == first.players[i].equity);
+      CHECK(again.players[i].tie == first.players[i].tie);
+    }
+  }
+}
+
+TEST_CASE("mc threads: different thread counts agree statistically", "[mc][threads]") {
+  const auto ps = specs({"AsKs", "QhQd", "JcTc"});
+  const auto one = equity_monte_carlo(ps, {}, {}, 200'000, 77, 1);
+  const auto four = equity_monte_carlo(ps, {}, {}, 200'000, 77, 4);
+  for (std::size_t i = 0; i < ps.size(); ++i) {
+    const double se = std::sqrt(one.players[i].std_error * one.players[i].std_error +
+                                four.players[i].std_error * four.players[i].std_error);
+    CHECK(std::abs(one.players[i].equity - four.players[i].equity) <= 4.0 * se);
+  }
+}
+
+TEST_CASE("mc threads: thread count edge cases", "[mc][threads]") {
+  const auto ps = specs({"AsKs", "QhQd"});
+  const auto hw = equity_monte_carlo(ps, {}, {}, 10'000, 3, 0);  // 0 = hardware threads
+  CHECK(hw.trials == 10'000);
+  const auto tiny = equity_monte_carlo(ps, {}, {}, 3, 3, 8);  // more threads than samples
+  CHECK(tiny.trials == 3);
+  // Exceptions thrown inside worker threads reach the caller.
+  CHECK_THROWS_AS(equity_monte_carlo(specs({"AA", "AA", "AA"}), {}, {}, 1000, 1, 4),
+                  std::invalid_argument);
+}
