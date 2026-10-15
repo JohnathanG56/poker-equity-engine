@@ -16,6 +16,7 @@ option(POKER_BUILD_TESTS "Build unit tests" ON)
 option(POKER_BUILD_BENCH "Build the benchmark binary" ON)
 option(POKER_BUILD_CLI   "Build the command-line tool" ON)
 option(POKER_NATIVE_ARCH "Compile with -march=native (not portable)" OFF)
+option(POKER_X86_POPCNT  "On x86-64, use the hardware POPCNT instruction (any CPU since ~2008)" ON)
 
 # ---------------------------------------------------------------------------
 # Core library
@@ -32,6 +33,12 @@ target_include_directories(poker PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_options(poker PRIVATE -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wno-sign-conversion)
 if(POKER_NATIVE_ARCH)
   target_compile_options(poker PUBLIC -march=native)
+elseif(POKER_X86_POPCNT AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64)$" AND NOT EMSCRIPTEN)
+  # Baseline x86-64 has no popcount instruction, so std::popcount would fall
+  # back to a ~12-instruction bit-twiddling sequence. The evaluator calls it
+  # several times per hand; the hardware instruction is ~1.5x faster overall.
+  # (ARM64 / Apple Silicon and WebAssembly have a native popcount already.)
+  target_compile_options(poker PUBLIC -mpopcnt)
 endif()
 
 # Emscripten (WebAssembly) builds only need the library + bindings.
@@ -49,6 +56,15 @@ if(POKER_BUILD_CLI)
   add_executable(equity cli/main.cpp)
   target_link_libraries(equity PRIVATE poker)
   target_compile_options(equity PRIVATE -Wall -Wextra)
+endif()
+
+# ---------------------------------------------------------------------------
+# Benchmarks: ./build/bench
+# ---------------------------------------------------------------------------
+if(POKER_BUILD_BENCH)
+  add_executable(bench bench/bench.cpp)
+  target_link_libraries(bench PRIVATE poker)
+  target_compile_options(bench PRIVATE -Wall -Wextra)
 endif()
 
 # ---------------------------------------------------------------------------
