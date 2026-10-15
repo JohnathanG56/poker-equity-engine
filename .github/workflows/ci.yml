@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.os }} / ${{ matrix.compiler }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            compiler: gcc
+            cxx: g++
+          - os: ubuntu-latest
+            compiler: clang
+            cxx: clang++
+          - os: macos-latest
+            compiler: apple-clang
+            cxx: clang++
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure (Release)
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: CLI smoke test
+        run: |
+          ./build/equity "AsKs" "QhQd" --board "Jc Tc 2d" --exact
+          ./build/equity "AhAd" "QQ+, AKs, ATo+" random --samples 200000 --threads 2
+
+      - name: Benchmark (quick, numbers not meaningful on shared CI runners)
+        run: ./build/bench --quick
+
+  sanitizers:
+    name: ubuntu / ASan + UBSan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Allow sanitizer shadow memory (ubuntu-24.04 ASLR setting)
+        run: sudo sysctl vm.mmap_rnd_bits=28
+      - name: Configure
+        run: >
+          cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DPOKER_BUILD_BENCH=OFF
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+      - name: Build
+        run: cmake --build build -j
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  thread-sanitizer:
+    name: ubuntu / TSan (threaded Monte Carlo)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Allow sanitizer shadow memory (ubuntu-24.04 ASLR setting)
+        run: sudo sysctl vm.mmap_rnd_bits=28
+      - name: Configure
+        run: >
+          cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DPOKER_BUILD_BENCH=OFF
+          -DCMAKE_CXX_FLAGS="-fsanitize=thread"
+      - name: Build
+        run: cmake --build build -j --target poker_tests
+      - name: Test threaded code
+        run: ./build/poker_tests "[mc]"
+
+  wasm:
+    name: WebAssembly build + Node smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.51
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build native CLI (for cross-checking)
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DPOKER_BUILD_TESTS=OFF -DPOKER_BUILD_BENCH=OFF
+          cmake --build build -j --target equity
+      - name: Build WebAssembly module
+        run: ./scripts/build-wasm.sh
+      - name: Smoke test (wasm vs native, bit-for-bit)
+        run: node web/test/smoke.mjs build/equity
