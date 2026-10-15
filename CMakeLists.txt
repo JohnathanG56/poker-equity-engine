@@ -1,0 +1,63 @@
+cmake_minimum_required(VERSION 3.20)
+project(poker_equity_engine VERSION 1.0.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Default to an optimized build: this is a performance project.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+
+option(POKER_BUILD_TESTS "Build unit tests" ON)
+option(POKER_BUILD_BENCH "Build the benchmark binary" ON)
+option(POKER_BUILD_CLI   "Build the command-line tool" ON)
+option(POKER_NATIVE_ARCH "Compile with -march=native (not portable)" OFF)
+
+# ---------------------------------------------------------------------------
+# Core library
+# ---------------------------------------------------------------------------
+add_library(poker
+  src/card.cpp
+)
+target_include_directories(poker PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_options(poker PRIVATE -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wno-sign-conversion)
+if(POKER_NATIVE_ARCH)
+  target_compile_options(poker PUBLIC -march=native)
+endif()
+
+# Emscripten (WebAssembly) builds only need the library + bindings.
+if(EMSCRIPTEN)
+  return()
+endif()
+
+find_package(Threads REQUIRED)
+target_link_libraries(poker PUBLIC Threads::Threads)
+
+# ---------------------------------------------------------------------------
+# Tests (Catch2 v3 via FetchContent)
+# ---------------------------------------------------------------------------
+if(POKER_BUILD_TESTS)
+  include(FetchContent)
+  FetchContent_Declare(
+    Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG        v3.7.1
+    GIT_SHALLOW    TRUE
+  )
+  FetchContent_MakeAvailable(Catch2)
+
+  enable_testing()
+  add_executable(poker_tests
+    tests/test_card.cpp
+  )
+  target_link_libraries(poker_tests PRIVATE poker Catch2::Catch2WithMain)
+  target_compile_options(poker_tests PRIVATE -Wall -Wextra)
+
+  list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+  include(Catch)
+  catch_discover_tests(poker_tests)
+endif()

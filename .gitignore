@@ -1,0 +1,21 @@
+# Build trees (native + WebAssembly)
+build/
+build-*/
+cmake-build-*/
+out/
+
+# Generated WebAssembly bundle (built by scripts/build-wasm.sh / CI)
+web/wasm/
+
+# Toolchains and dependencies
+emsdk/
+node_modules/
+_deps/
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+compile_commands.json
+.cache/
