@@ -37,6 +37,7 @@ Options:
   -n, --samples N      Monte Carlo samples (default 1000000; accepts 1e6)
   -t, --threads N      worker threads (default: all hardware threads)
   -s, --seed N         RNG seed (default 1); same seed + threads = same result
+      --json           print machine-readable JSON instead of the table
       --eval CARDS     print the best 5-card hand made from 5-7 cards
   -h, --help           show this help
 )";
@@ -47,6 +48,7 @@ struct Options {
   std::string dead;
   std::string eval;
   bool exact = false;
+  bool json = false;
   bool samples_given = false;
   std::uint64_t samples = 1'000'000;
   unsigned threads = 0;
@@ -98,6 +100,8 @@ Options parse_args(int argc, char** argv) {
       o.threads = static_cast<unsigned>(parse_count(a, value(i, a)));
     } else if (a == "-s" || a == "--seed") {
       o.seed = parse_count(a, value(i, a));
+    } else if (a == "--json") {
+      o.json = true;
     } else if (a == "--eval") {
       o.eval = value(i, a);
     } else if (a.size() > 1 && a[0] == '-' && a != "-") {
@@ -124,6 +128,21 @@ std::string pct(double x, int decimals = 2) {
 std::string pad(std::string s, std::size_t w, bool right = false) {
   if (s.size() >= w) return s;
   return right ? std::string(w - s.size(), ' ') + s : s + std::string(w - s.size(), ' ');
+}
+
+std::string json_string(const std::string& s) {
+  std::string out = "\"";
+  for (char c : s) {
+    if (c == '"' || c == '\\') out += '\\';
+    out += c;
+  }
+  return out + "\"";
+}
+
+std::string num(double x) {
+  char buf[40];
+  std::snprintf(buf, sizeof buf, "%.17g", x);
+  return buf;
 }
 
 std::string bar(double equity, int width = 24) {
@@ -182,6 +201,28 @@ int main(int argc, char** argv) {
     }
     const double secs = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
 
+    auto combos_of = [&](const poker::PlayerSpec& s) -> std::size_t {
+      if (s.kind == poker::PlayerSpec::Kind::Range) return poker::remove_conflicts(s.combos, fixed).size();
+      if (s.kind == poker::PlayerSpec::Kind::Random) return poker::remove_conflicts(poker::all_combos(), fixed).size();
+      return 1;
+    };
+
+    if (o.json) {
+      std::cout << "{\"mode\": " << (r.exact ? "\"exact\"" : "\"monte_carlo\"") << ", \"board\": "
+                << json_string(board.str()) << ", \"trials\": " << r.trials << ", \"rejected\": " << r.rejected
+                << ", \"threads\": " << (r.exact ? 1 : threads) << ", \"seed\": " << o.seed
+                << ", \"seconds\": " << num(secs) << ", \"players\": [";
+      for (std::size_t i = 0; i < specs.size(); ++i) {
+        const auto& p = r.players[i];
+        std::cout << (i ? ", " : "") << "{\"label\": " << json_string(specs[i].label)
+                  << ", \"combos\": " << combos_of(specs[i]) << ", \"win\": " << num(p.win)
+                  << ", \"tie\": " << num(p.tie) << ", \"equity\": " << num(p.equity)
+                  << ", \"std_error\": " << num(p.std_error) << "}";
+      }
+      std::cout << "]}\n";
+      return 0;
+    }
+
     // ---- header -------------------------------------------------------------
     std::cout << "\n  Board    " << (board.empty() ? "(preflop)" : board.str()) << "\n";
     if (!dead.empty()) std::cout << "  Dead     " << dead.str() << "\n";
@@ -209,9 +250,7 @@ int main(int argc, char** argv) {
     for (std::size_t i = 0; i < specs.size(); ++i) {
       const auto& s = specs[i];
       const auto& p = r.players[i];
-      std::size_t combos = 1;
-      if (s.kind == poker::PlayerSpec::Kind::Range) combos = poker::remove_conflicts(s.combos, fixed).size();
-      if (s.kind == poker::PlayerSpec::Kind::Random) combos = poker::remove_conflicts(poker::all_combos(), fixed).size();
+      const std::size_t combos = combos_of(s);
       std::string label = s.label;
       if (label.size() > 22) label = label.substr(0, 21) + "~";
       std::cout << "  " << pad(std::to_string(i + 1), 3) << pad(label, 24) << pad(std::to_string(combos), 8, true)

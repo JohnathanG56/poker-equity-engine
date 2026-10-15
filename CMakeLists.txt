@@ -41,8 +41,29 @@ elseif(POKER_X86_POPCNT AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64
   target_compile_options(poker PUBLIC -mpopcnt)
 endif()
 
-# Emscripten (WebAssembly) builds only need the library + bindings.
+# ---------------------------------------------------------------------------
+# WebAssembly build (emcmake cmake ...): library + Embind bindings only.
+# Produces web/wasm/poker.js (ES module) and web/wasm/poker.wasm.
+# ---------------------------------------------------------------------------
 if(EMSCRIPTEN)
+  # Native WebAssembly exception handling so C++ errors (bad card text, etc.)
+  # can be caught in the bindings and returned to JS as {ok:false, error}.
+  target_compile_options(poker PUBLIC -fwasm-exceptions)
+  add_executable(poker_wasm web/bindings/poker_wasm.cpp)
+  target_link_libraries(poker_wasm PRIVATE poker)
+  set_target_properties(poker_wasm PROPERTIES
+    OUTPUT_NAME poker
+    SUFFIX ".js"
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/web/wasm)
+  target_link_options(poker_wasm PRIVATE
+    -lembind
+    -fwasm-exceptions
+    -sMODULARIZE=1
+    -sEXPORT_ES6=1
+    -sEXPORT_NAME=createPokerModule
+    -sENVIRONMENT=web,worker,node
+    -sALLOW_MEMORY_GROWTH=1
+    -sFILESYSTEM=0)
   return()
 endif()
 

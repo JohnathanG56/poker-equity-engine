@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Poker Equity Engine</title>
+    <meta
+      name="description"
+      content="Texas Hold'em equity calculator: a C++20 engine compiled to WebAssembly, running in a Web Worker."
+    />
+    <link rel="stylesheet" href="./style.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♠</text></svg>"
+    />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">♠</span>
+        <div>
+          <h1>Poker Equity Engine</h1>
+          <p class="tagline">C++20 hand evaluator &amp; equity engine, compiled to WebAssembly, running in a Web Worker.</p>
+        </div>
+      </div>
+      <div class="presets" role="group" aria-label="Example spots">
+        <span class="presets-label">Try:</span>
+        <button data-preset="aksqq">AKs vs QQ</button>
+        <button data-preset="flop">Flop: AKs vs QQ</button>
+        <button data-preset="ranges">Range vs range</button>
+        <button data-preset="sixway">6-way</button>
+        <button data-preset="random">AA vs 3 random</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="table-col">
+        <div class="panel board-panel">
+          <div class="panel-head">
+            <h2>Board</h2>
+            <button class="ghost small" id="clear-board">Clear</button>
+          </div>
+          <div class="board" id="board"></div>
+          <p class="hint" id="board-hint"></p>
+        </div>
+
+        <div class="status" id="status" aria-live="polite">Loading WebAssembly…</div>
+
+        <div id="players" class="players"></div>
+
+        <div class="actions">
+          <button id="add-player" class="ghost">+ Add player</button>
+          <button id="reset" class="ghost">Reset</button>
+        </div>
+      </section>
+
+      <aside class="picker-col">
+        <div class="panel picker-panel">
+          <div class="panel-head">
+            <h2>Cards</h2>
+            <span class="hint" id="picker-target">Select a slot, then a card</span>
+          </div>
+          <div class="picker" id="picker" role="grid" aria-label="Card picker"></div>
+        </div>
+        <div class="panel help">
+          <h2>How it works</h2>
+          <ul>
+            <li><strong>All hands known</strong>: exact enumeration of every possible board, zero error.</li>
+            <li>
+              <strong>Ranges / random</strong>: Monte Carlo in growing batches; bars update live and the
+              <span class="mono">±</span> shows one standard error.
+            </li>
+            <li>
+              Range syntax: <span class="mono">QQ+, AKs, ATo+, 76s, KQ, 22-55, A2s-A5s</span>
+            </li>
+          </ul>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="foot">
+      Everything runs locally in your browser · 7-card evaluator with compile-time lookup tables · xoshiro256**
+      Monte Carlo with standard errors
+    </footer>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

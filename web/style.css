@@ -1,0 +1,556 @@
+:root {
+  --bg: #0d1117;
+  --bg-grad: radial-gradient(1200px 600px at 20% -10%, #15402e 0%, transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, #1b2b4a 0%, transparent 55%);
+  --panel: rgba(22, 27, 34, 0.82);
+  --panel-border: #2a313c;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #3fb68b;
+  --accent-soft: rgba(63, 182, 139, 0.18);
+  --danger: #f0716b;
+  --card-bg: #fbfbf8;
+  --card-text: #1f2328;
+  --slot: rgba(255, 255, 255, 0.04);
+  --slot-border: #3b4452;
+  --spade: #1f2328;
+  --heart: #d1342f;
+  --diamond: #1f6feb;
+  --club: #1a7f37;
+  --radius: 14px;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f4f6f4;
+    --bg-grad: radial-gradient(1200px 600px at 20% -10%, #d6efe2 0%, transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, #dfe7f7 0%, transparent 55%);
+    --panel: rgba(255, 255, 255, 0.9);
+    --panel-border: #d8dee4;
+    --text: #1f2328;
+    --muted: #59636e;
+    --accent: #1f8a5e;
+    --accent-soft: rgba(31, 138, 94, 0.14);
+    --slot: rgba(0, 0, 0, 0.03);
+    --slot-border: #c3cbd3;
+    --shadow: 0 10px 30px rgba(31, 35, 40, 0.1);
+    color-scheme: light;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg-grad), var(--bg);
+  background-attachment: fixed;
+  color: var(--text);
+  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+h1,
+h2 {
+  margin: 0;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+h1 {
+  font-size: 1.45rem;
+}
+h2 {
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+}
+
+/* ---------- header ---------- */
+.top {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 20px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.logo {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), #1f6feb);
+  color: white;
+  font-size: 26px;
+  box-shadow: var(--shadow);
+}
+.tagline {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.presets-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.presets button,
+.ghost {
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+.presets button:hover,
+.ghost:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.ghost.small {
+  padding: 3px 10px;
+  font-size: 0.78rem;
+}
+
+/* ---------- layout ---------- */
+.layout {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 12px 20px 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 980px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(6px);
+}
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 10px;
+}
+.hint {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin: 6px 0 0;
+  min-height: 1.2em;
+}
+.panel-head .hint {
+  margin: 0;
+}
+.picker-col {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+/* ---------- cards & slots ---------- */
+.card,
+.slot {
+  width: 46px;
+  height: 64px;
+  border-radius: 8px;
+  flex: none;
+  position: relative;
+  user-select: none;
+}
+.card {
+  background: var(--card-bg);
+  color: var(--card-text);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  line-height: 1;
+}
+.card .r {
+  position: absolute;
+  top: 5px;
+  left: 6px;
+  font-size: 0.95rem;
+}
+.card .s {
+  font-size: 1.6rem;
+  margin-top: 10px;
+}
+.card.h {
+  color: var(--heart);
+}
+.card.d {
+  color: var(--diamond);
+}
+.card.c {
+  color: var(--club);
+}
+.card.s-suit {
+  color: var(--spade);
+}
+.slot {
+  border: 1.5px dashed var(--slot-border);
+  background: var(--slot);
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+.slot:hover {
+  border-color: var(--accent);
+}
+.slot.active {
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+.slot.filled {
+  border: none;
+  background: none;
+}
+.slot.filled .card {
+  transition: transform 0.12s;
+}
+.slot.filled:hover .card {
+  transform: translateY(-2px);
+}
+.slot.filled.active .card {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.board {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.board .gap {
+  width: 10px;
+}
+
+/* ---------- picker ---------- */
+.picker {
+  display: grid;
+  grid-template-columns: repeat(13, minmax(0, 1fr));
+  gap: 4px;
+}
+.pick {
+  aspect-ratio: 46 / 64;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: var(--card-bg);
+  font-weight: 700;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  grid-template-rows: 1fr 1fr;
+  transition: transform 0.08s, opacity 0.15s;
+}
+.pick span {
+  font-size: clamp(0.62rem, 1.6vw, 0.82rem);
+}
+.pick:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+.pick:disabled {
+  opacity: 0.18;
+  cursor: default;
+}
+.pick.h {
+  color: var(--heart);
+}
+.pick.d {
+  color: var(--diamond);
+}
+.pick.c {
+  color: var(--club);
+}
+.pick.s-suit {
+  color: var(--spade);
+}
+
+/* ---------- status ---------- */
+.status {
+  margin: 14px 2px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 1.5em;
+}
+.status .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+}
+.status .dot.busy {
+  animation: pulse 0.9s ease-in-out infinite;
+}
+.status.error {
+  color: var(--danger);
+}
+.status.error .dot {
+  background: var(--danger);
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* ---------- players ---------- */
+.players {
+  display: grid;
+  gap: 12px;
+}
+.player {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+.player .left {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  width: 250px;
+}
+.player-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 650;
+}
+.player-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.remove {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 4px;
+}
+.remove:hover {
+  color: var(--danger);
+}
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.seg button {
+  border: none;
+  background: none;
+  padding: 3px 10px;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+.seg button.on {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+.hand {
+  display: flex;
+  gap: 6px;
+  min-height: 64px;
+  align-items: center;
+}
+.range-input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--panel-border);
+  background: var(--slot);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: 0.86rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.range-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.range-input.bad {
+  border-color: var(--danger);
+}
+.random-chip {
+  display: flex;
+  gap: 6px;
+}
+.card-back {
+  width: 46px;
+  height: 64px;
+  border-radius: 8px;
+  border: 2px solid var(--card-bg);
+  background: repeating-linear-gradient(45deg, #2b5f9e 0 4px, #1f4a7c 4px 8px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 700;
+}
+
+.result {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.result-top {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.equity {
+  font-size: 1.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.se {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.bar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--slot);
+  border: 1px solid var(--panel-border);
+  overflow: hidden;
+}
+.bar > div {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  transition: width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.meta .made {
+  color: var(--text);
+}
+.err {
+  color: var(--danger);
+  font-size: 0.8rem;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.help ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.help li {
+  margin-bottom: 6px;
+}
+.help strong {
+  color: var(--text);
+}
+
+.foot {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 8px 20px 32px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .player {
+    grid-template-columns: 1fr;
+  }
+  .player .left {
+    width: 100%;
+  }
+  .card,
+  .card-back,
+  .slot {
+    width: 40px;
+    height: 56px;
+  }
+  .equity {
+    font-size: 1.6rem;
+  }
+}
+
+/* Narrow screens: card picker first, then the table, then the help.
+   (Kept at the end so it overrides the .picker-col rules above.) */
+@media (max-width: 980px) {
+  .picker-col {
+    display: contents;
+  }
+  .picker-panel {
+    order: -1;
+  }
+  .help {
+    order: 1;
+  }
+}
