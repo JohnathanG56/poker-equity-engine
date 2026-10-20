@@ -1,5 +1,19 @@
 # Poker Equity Engine
 
+[![CI](https://github.com/JohnathanG56/poker-equity-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/JohnathanG56/poker-equity-engine/actions/workflows/ci.yml)
+[![Deploy web demo](https://github.com/JohnathanG56/poker-equity-engine/actions/workflows/pages.yml/badge.svg)](https://github.com/JohnathanG56/poker-equity-engine/actions/workflows/pages.yml)
+
+**Live demo: [johnathang56.github.io/poker-equity-engine](https://johnathang56.github.io/poker-equity-engine/)**. The C++ engine is compiled to
+WebAssembly and runs entirely in your browser.
+
+![Browser calculator: AA against three random hands, with live equity bars and standard errors](docs/screenshot.png)
+
+**Highlights**
+- Bitmask 7-card evaluator with compile-time lookup tables, checked against a brute-force reference on all 133,784,560 seven-card hands
+- Exact equity by enumerating every board, plus multithreaded Monte Carlo (thread-local tallies, no locks) for ranges and unknown hands, with per-player standard error
+- 51 Catch2 test cases, run in CI under AddressSanitizer + UndefinedBehaviorSanitizer and ThreadSanitizer
+- About 58M hands/s single-threaded on a 2-vCPU cloud container (see [Benchmarks](#benchmarks))
+
 A Texas Hold'em **equity engine in modern C++20**: a branch-light 7-card hand evaluator built on
 bit tricks and compile-time lookup tables, **exact** equity by enumerating every board,
 **multithreaded Monte Carlo** for hand ranges and unknown hands (with standard errors), a
@@ -114,7 +128,7 @@ Cards are bits `rank*4 + suit` in a 64-bit mask, so each rank owns one 4-bit nib
    with equal popcount compare lexicographically, so one integer comparison settles any showdown,
    kickers included.
 
-[LEARN.md](LEARN.md) walks through a full example hand bit by bit.
+ walks through a full example hand bit by bit.
 
 ## Exact vs. Monte Carlo vs. ranges
 
@@ -173,29 +187,16 @@ was verified with Emscripten 3.1.51. **GitHub Pages:** push to `main`, then in t
 choose *Pages → Source: GitHub Actions*; `.github/workflows/pages.yml` builds the wasm and deploys
 `web/`.
 
-## Resume numbers (fill from your machine)
+## Benchmarks
 
-Run on your own laptop (plugged in, other apps closed), Release build:
+Reproduce on your own machine (Release build):
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j
-./build/bench --out docs/bench-results-mac.md
+./build/bench
 ```
 
-| Metric | Your machine | Where in the output |
-|---|---|---|
-| `evaluate7` throughput (median) | ___ M hands/s | "Hand evaluator throughput" |
-| MC samples/s, 1 thread (HU preflop) | ___ M/s | "Monte Carlo throughput vs. threads" |
-| MC samples/s, all threads | ___ M/s (___x) | same table, last row |
-| Exact HU preflop enumeration | ___ s for 1,712,304 boards | "Exact enumeration" |
-| MC accuracy (1M samples, 28 matchups) | max ___ pp, mean ___ pp | "Accuracy" summary |
-| Tests | 51 test cases pass | `ctest --test-dir build` |
-
-CPU / cores: ________________
-
-### Reference results from the development container
-
-> **Measured in a 2-core Linux cloud dev container — rerun `./build/bench` on your own machine for resume numbers.**
+> **Measured in a 2-core Linux cloud container.**
 > Full output: [docs/bench-results-cloud.md](docs/bench-results-cloud.md). The container was shared
 > with other workloads, so throughput numbers are noisy.
 
@@ -229,7 +230,7 @@ docs/            benchmark results
   Worker for responsiveness rather than parallelism.
 - Exact enumeration is single-threaded; it is already sub-second for typical spots.
 - Faster evaluators exist (e.g. large perfect-hash tables); this one deliberately trades a few
-  nanoseconds for tiny tables that fit in WebAssembly. See LEARN.md for ideas.
+  nanoseconds for tiny tables that fit in WebAssembly.
 
 ## License
 
